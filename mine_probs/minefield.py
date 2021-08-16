@@ -14,9 +14,9 @@ __all__ = ("MinefieldWidget",)
 
 import functools
 import logging
-import zig_minesolver
-from typing import Callable, Dict, Iterable, Optional, Set, Tuple
+from typing import Callable, Dict, Optional, Set, Tuple
 
+import zig_minesolver
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap, QPen, QBrush, QColor
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
