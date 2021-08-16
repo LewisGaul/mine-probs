@@ -1,0 +1,12 @@
+*venv*/
+*.log
+build/
+dist/
+*.egg-info/
+target/
+__pycache__/
+.ipynb_checkpoints/
+Untitled.ipynb
+.vscode/
+zig-cache/
+zig-out/
