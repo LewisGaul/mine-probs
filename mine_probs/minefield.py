@@ -15,13 +15,13 @@ __all__ = ("MinefieldWidget",)
 import functools
 import logging
 import zig_minesolver
-from typing import Callable, Dict, Iterable, Optional, Set
+from typing import Callable, Dict, Iterable, Optional, Set, Tuple
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
+from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap, QPen, QBrush, QColor
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
-from .board import Board
+from .board import Board, Grid
 from .types import CellContents, CellImageType, Coord_T
 from . import IMG_DIR
 
@@ -142,6 +142,10 @@ def _filter_left_and_right(mouse_event_func: Callable):
     return wrapper
 
 
+def _blend_colours(ratio, high=(255, 0, 0), low=(255, 255, 64)) -> Tuple[int, int, int]:
+    return tuple(int(low[i] + ratio * (high[i] - low[i])) for i in range(3))
+
+
 class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
@@ -182,6 +186,8 @@ class MinefieldWidget(QGraphicsView):
 
         # Set of coords for cells which are sunken.
         self._sunken_cells: Set[Coord_T] = set()
+
+        self._colours = []
 
         self.reset()
 
@@ -425,16 +431,45 @@ class MinefieldWidget(QGraphicsView):
         b = self._scene.addPixmap(self._cell_images[state])
         b.setPos(x * self.btn_size, y * self.btn_size)
 
+    def _set_cell_colour(self, coord: Coord_T, prob: float) -> None:
+        """Set the colour of an unclicked cell based on probability."""
+        x, y = coord
+        x = x * self.btn_size + 2
+        y = y * self.btn_size + 2
+        w = self.btn_size - 4
+        h = self.btn_size - 4
+        pen = QPen(Qt.NoPen)
+
+        density = 8 / (self.x_size * self.y_size)  # TODO
+        if prob >= density:
+            ratio = (prob - density) / (1 - density)
+            colour = _blend_colours(ratio)
+        else:
+            ratio = (density - prob) / density
+            colour = _blend_colours(ratio, high=(0, 255, 0))
+        brush = QBrush(QColor(*colour))
+        self._colours.append(self._scene.addRect(x, y, w, h, pen, brush))
+
+    def _remove_cell_colours(self) -> None:
+        """Remove colouring from unclicked cells."""
+        for rect in self._colours:
+            self._scene.removeItem(rect)
+        self._colours.clear()
+
     def _display_probs(self) -> None:
         """Display the board's probabilities."""
+        self._remove_cell_colours()
         try:
             probs = zig_minesolver.get_board_probs(str(self.board), mines=8, per_cell=3)
         except Exception as e:
             logger.warning("Failed to calculate probabilities, %s", e)
             return
+        probs = Grid.from_2d_array(probs)
         print()
-        for row in probs:
-            print(row)
+        print(probs)
+        for coord in self.board.all_coords:
+            if self.board[coord] is CellContents.Unclicked:
+                self._set_cell_colour(coord, probs[coord])
 
     def reset(self) -> None:
         """Reset all cell images and other state for a new game."""
