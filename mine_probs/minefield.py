@@ -14,6 +14,7 @@ __all__ = ("MinefieldWidget",)
 
 import functools
 import logging
+import zig_minesolver
 from typing import Callable, Dict, Iterable, Optional, Set
 
 from PyQt5.QtCore import QSize, Qt
@@ -152,7 +153,7 @@ class MinefieldWidget(QGraphicsView):
 
         self.x_size = 8
         self.y_size = 8
-        self.btn_size = 25
+        self.btn_size = 32
         self.board = Board(self.x_size, self.y_size)
 
         self._cell_images: Dict[CellContents, QPixmap] = {}
@@ -300,8 +301,9 @@ class MinefieldWidget(QGraphicsView):
         Left mouse button was pressed (single click). Change display and call
         callback functions as appropriate.
         """
-        self._set_cell_image(coord, _SUNKEN_CELL)
-        self._sunken_cells.add(coord)
+        if self.board[coord] is CellContents.Unclicked:
+            self._set_cell_image(coord, _SUNKEN_CELL)
+            self._sunken_cells.add(coord)
 
     def left_button_double_down(self, coord: Coord_T) -> None:
         """
@@ -339,6 +341,7 @@ class MinefieldWidget(QGraphicsView):
         else:
             return
         self._set_cell_image(coord)
+        self._display_probs()
 
     def right_button_down(self, coord: Coord_T) -> None:
         """
@@ -356,6 +359,7 @@ class MinefieldWidget(QGraphicsView):
         else:
             return
         self._set_cell_image(coord)
+        self._display_probs()
 
     def all_buttons_release(self) -> None:
         """
@@ -420,6 +424,17 @@ class MinefieldWidget(QGraphicsView):
         x, y = coord
         b = self._scene.addPixmap(self._cell_images[state])
         b.setPos(x * self.btn_size, y * self.btn_size)
+
+    def _display_probs(self) -> None:
+        """Display the board's probabilities."""
+        try:
+            probs = zig_minesolver.get_board_probs(str(self.board), mines=8, per_cell=3)
+        except Exception as e:
+            logger.warning("Failed to calculate probabilities, %s", e)
+            return
+        print()
+        for row in probs:
+            print(row)
 
     def reset(self) -> None:
         """Reset all cell images and other state for a new game."""
