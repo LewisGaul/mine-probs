@@ -319,6 +319,7 @@ class MinefieldWidget(QGraphicsView):
         if type(self.board[coord]) is CellContents.Flag:
             self.board[coord] = CellContents.Unclicked
             self._set_cell_image(coord)
+            self._display_probs()
         else:
             self._was_double_left_click = False
             self.left_button_down(coord)
@@ -460,7 +461,9 @@ class MinefieldWidget(QGraphicsView):
         """Display the board's probabilities."""
         self._remove_cell_colours()
         try:
-            probs = zig_minesolver.get_board_probs(str(self.board), mines=8, per_cell=3)
+            probs = zig_minesolver.get_board_probs(
+                str(self.board).replace("F", "*"), mines=8, per_cell=3
+            )
         except Exception as e:
             logger.warning("Failed to calculate probabilities, %s", e)
             return
