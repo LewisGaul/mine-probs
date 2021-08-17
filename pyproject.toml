@@ -1,12 +1,36 @@
 # BUILD
 # =====
 [build-system]
-# Minimum requirements for the build system to execute.
 requires = [
     "setuptools >= 42",
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "mine-probs"
+version = "0.1.0"
+description = "Minesweeper probabilities displayed for a board situation created in a GUI"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["minesweeper", "probability", "GUI", "PyQt5"]
+authors = [
+    {name = "Lewis Gaul", email = "lewis.gaul@gmail.com"},
+]
+maintainers = [
+    {name = "Lewis Gaul", email = "lewis.gaul@gmail.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+]
+dependencies = [
+    "PyQt5<5.15",
+    "zig_minesolver==0.1.1",
+]
+
+[project.urls]
+repository = "https://github.com/LewisGaul/mine-probs"
 
 
 # TOOLS
@@ -16,7 +40,7 @@ build-backend = "setuptools.build_meta"
 # -----
 [tool.black]
 line-length = 88
-target_version = ['py36']
+target_version = ['py37']
 include = '\.pyi?$'
 exclude = '''
 (
