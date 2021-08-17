@@ -18,12 +18,12 @@ from typing import Callable, Dict, Optional, Set, Tuple
 
 import zig_minesolver
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap, QPen, QBrush, QColor
+from PyQt5.QtGui import QBrush, QColor, QImage, QMouseEvent, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
+from . import IMG_DIR
 from .board import Board, Grid
 from .types import CellContents, CellImageType, Coord_T
-from . import IMG_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -441,12 +441,12 @@ class MinefieldWidget(QGraphicsView):
         h = self.btn_size - 4
         pen = QPen(Qt.NoPen)
 
-        density = 8 / (self.x_size * self.y_size)  # TODO
-        if prob >= density:
-            ratio = (prob - density) / (1 - density)
+        mid_density = 0.2
+        if prob >= mid_density:
+            ratio = (prob - mid_density) / (1 - mid_density)
             colour = _blend_colours(ratio)
         else:
-            ratio = (density - prob) / density
+            ratio = (mid_density - prob) / mid_density
             colour = _blend_colours(ratio, high=(0, 255, 0))
         brush = QBrush(QColor(*colour))
         self._colours.append(self._scene.addRect(x, y, w, h, pen, brush))
@@ -462,7 +462,7 @@ class MinefieldWidget(QGraphicsView):
         self._remove_cell_colours()
         try:
             probs = zig_minesolver.get_board_probs(
-                str(self.board).replace("F", "*"), mines=8, per_cell=3
+                str(self.board).replace("F", "*"), density=0.2, per_cell=3
             )
         except Exception as e:
             logger.warning("Failed to calculate probabilities, %s", e)
@@ -471,7 +471,10 @@ class MinefieldWidget(QGraphicsView):
         print()
         print(probs)
         for coord in self.board.all_coords:
-            if self.board[coord] is CellContents.Unclicked:
+            if self.board[coord] is CellContents.Unclicked and any(
+                type(self.board[c]) is CellContents.Num and self.board[c].num > 0
+                for c in self.board.get_nbrs(coord)
+            ):
                 self._set_cell_colour(coord, probs[coord])
 
     def reset(self) -> None:
